@@ -23,6 +23,10 @@ namespace FindDuplicateFiles {
 			controller._filePaths.Add(path2);
 			var files = controller.GetFilesForAllPaths();
 
+			watch.Stop();
+			var elapsedMs2 = watch.ElapsedMilliseconds;
+			Console.WriteLine("Execution time = " + elapsedMs2 + " ms");
+
 			//Sort files by filesize into dictionary
 			foreach (var filePath in files) {
 				long fileSize;

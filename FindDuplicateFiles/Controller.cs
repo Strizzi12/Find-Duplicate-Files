@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace FindDuplicateFiles {
 	public class Controller {
@@ -16,15 +17,15 @@ namespace FindDuplicateFiles {
 		private bool _moreInfo;
 		private List<string> _fileFilter = new List<string>(); //already a regex pattern
 		private int? _depthOfRecursion = null;
-		private int? _maxTasks;
+		private int? _maxTasks = null;
 
 		public List<string> TestFindDuplicateFiles(List<string> files) {
 			return files.Select(
 					f => new {
 						FileName = f,
 						FileHash = Encoding.UTF8.GetString(
-							new SHA1Managed().ComputeHash(new FileStream(f, FileMode.Open, FileAccess.Read)))
-					})
+							new SHA1Managed().ComputeHash(new FileStream(f, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+					}).CatchExceptions((ex) => Console.WriteLine(ex.Message))
 				.GroupBy(f => f.FileHash)
 				.Select(g => new { FileHash = g.Key, Files = g.Select(z => z.FileName).ToList() })
 				.SelectMany(f => f.Files.Skip(1))
@@ -33,10 +34,11 @@ namespace FindDuplicateFiles {
 
 		public List<string> GetFilesForAllPaths() {
 			List<string> allFiles = new List<string>();
-			foreach (var filePath in _filePaths) {
-				var list = GetFiles(filePath, _fileFilter, _depthOfRecursion);
-				allFiles.AddRange(list);
-			}
+			Parallel.ForEach(_filePaths, _maxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = _maxTasks.Value } : new ParallelOptions(),
+				filePath => {
+					var list = GetFiles(filePath, _fileFilter, _depthOfRecursion);
+					allFiles.AddRange(list);
+				});
 			return allFiles;
 		}
 
@@ -67,15 +69,16 @@ namespace FindDuplicateFiles {
 		private List<string> FilterFiles(List<string> files, List<string> filters) {
 			var list = new List<string>();
 			if (filters.Count > 0) {
-				foreach (var file in files) {
-					foreach (var filter in filters) {
-						var regex = new Regex(filter);
-						if (regex.IsMatch(file)) {
-							list.Add(file);
-							break;
+				Parallel.ForEach(files, _maxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = _maxTasks.Value } : new ParallelOptions(),
+					file => {
+						foreach (var filter in filters) {
+							var regex = new Regex(filter);
+							if (regex.IsMatch(file)) {
+								list.Add(file);
+								break;
+							}
 						}
-					}
-				}
+					});
 				return list;
 			}
 			return files;
@@ -93,9 +96,10 @@ namespace FindDuplicateFiles {
 					case "-t":
 						if (args[i + 1] != null) {
 							_optimizeTaskCount = true; //When file size is known, a calculation of the optimal thread count could be made.
+							_maxTasks = null;
 							continue;
 						}
-						if (IsDigitsOnly(args[i + 1])) {
+						if (Helper.IsDigitsOnly(args[i + 1])) {
 							_maxTasks = Int32.Parse(args[i + 1]);
 							i++; //Counter can be increased because the value of maxThreads is already read.
 							continue;
@@ -136,7 +140,7 @@ namespace FindDuplicateFiles {
 							continue;
 						} else {
 							var help = args[i + 1];
-							if (IsDigitsOnly(help)) {
+							if (Helper.IsDigitsOnly(help)) {
 								_depthOfRecursion = Int32.Parse(help);
 								i++; //Counter can be increased because the value of maxThreads is already read.
 								continue;
@@ -170,12 +174,6 @@ namespace FindDuplicateFiles {
 			Console.WriteLine("Copyright© by Mike Thomas and Andreas Reschenhofer");
 		}
 
-		private static bool IsDigitsOnly(string str) {
-			foreach (char c in str) {
-				if (c < '0' || c > '9')
-					return false;
-			}
-			return true;
-		}
+		
 	}
 }
