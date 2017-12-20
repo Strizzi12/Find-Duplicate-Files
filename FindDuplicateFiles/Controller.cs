@@ -10,10 +10,10 @@ namespace FindDuplicateFiles {
 		private bool _printProcessTime;
 		private bool _optimizeTaskCount;
 		private bool _error;
-		private List<string> _filePaths;
+		public List<string> _filePaths = new List<string>();
 		private bool _moreInfo;
-		private List<string> _fileFilter; //already a regex pattern
-		private int? _depthOfRecursion;
+		private List<string> _fileFilter = new List<string>(); //already a regex pattern
+		private int? _depthOfRecursion = null;
 		private int? _maxTasks;
 
 		public List<string> GetFilesForAllPaths() {
@@ -33,15 +33,17 @@ namespace FindDuplicateFiles {
 				directoriesInPath = Directory.GetDirectories(path);
 				filesInPath = Directory.GetFiles(path);
 			} catch (Exception ex) {
-				Console.WriteLine(ex);
+				Console.WriteLine(ex.Message);
 				return new List<string>();
 			}
 			foreach (var directory in directoriesInPath) {
-				if (depth != null) {
-					files = GetFiles(directory, filter, depth - 1);
+				var temp = new List<string>();
+				if (depth != null && depth > 0) {
+					temp = GetFiles(directory, filter, depth - 1);
 				} else {
-					files = GetFiles(directory, filter);
+					temp = GetFiles(directory, filter);
 				}
+				files.AddRange(temp);
 			}
 			files.AddRange(filesInPath);
 			return FilterFiles(files, filter);
@@ -64,9 +66,9 @@ namespace FindDuplicateFiles {
 			return files;
 		}
 
-		public void ParseInputArguments(string[] argv) {
-			for (int i = 0; i < argv.Length; i++) {
-				switch (argv[i]) {
+		public void ParseInputArguments(string[] args) {
+			for (int i = 0; i < args.Length; i++) {
+				switch (args[i]) {
 					case "-w":
 						_waitForTermination = true;
 						continue;
@@ -74,17 +76,16 @@ namespace FindDuplicateFiles {
 						_printProcessTime = true;
 						continue;
 					case "-t":
-						if (argv[i + 1] != null) {
+						if (args[i + 1] != null) {
 							_optimizeTaskCount = true; //When file size is known, a calculation of the optimal thread count could be made.
 							continue;
 						}
-						if (IsDigitsOnly(argv[i + 1])) {
-							_maxTasks = Int32.Parse(argv[i + 1]);
+						if (IsDigitsOnly(args[i + 1])) {
+							_maxTasks = Int32.Parse(args[i + 1]);
 							i++; //Counter can be increased because the value of maxThreads is already read.
 							continue;
 						} else {
 							Console.WriteLine("Error! Max. thread count must not contain character");
-							_error = true;
 							break;
 						}
 					case "-h":
@@ -94,8 +95,8 @@ namespace FindDuplicateFiles {
 						_moreInfo = true;
 						continue;
 					case "-f":
-						if (argv[i + 1] != null) {
-							var completeString = argv[i + 1];
+						if (args[i + 1] != null) {
+							var completeString = args[i + 1];
 							//Split string at ;
 							var allFilters = completeString.Split(';');
 							foreach (var filter in allFilters) {
@@ -106,33 +107,31 @@ namespace FindDuplicateFiles {
 							continue;
 						} else {
 							Console.WriteLine("Error! No filter given");
-							_error = true;
 							break;
 						}
 					case "-s":
-						_filePaths.Add(argv[i + 1]);
+						_filePaths.Add(args[i + 1]);
 						i++; //Counter can be increased because the value of filePath is already read.
 						continue;
 					case "-r":
-						if (argv[i + 1] != null && !argv[i + 1].Contains("-")
+						if (args[i + 1] != null && !args[i + 1].Contains("-")
 						) //Check if the next input argument is another functionality.
 						{
 							_depthOfRecursion = null; //All files and folders are progressed
 							continue;
 						} else {
-							var help = argv[i + 1];
+							var help = args[i + 1];
 							if (IsDigitsOnly(help)) {
 								_depthOfRecursion = Int32.Parse(help);
 								i++; //Counter can be increased because the value of maxThreads is already read.
 								continue;
 							}
 							Console.WriteLine("Error! Folder depth must not contain character.");
-							_error = true;
 							break;
 						}
 					default:
 						Console.WriteLine("Error! Unknown argument detected.");
-						_error = true;
+						PrintHelp();
 						break;
 				}
 			}

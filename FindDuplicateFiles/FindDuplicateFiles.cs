@@ -11,22 +11,27 @@ namespace FindDuplicateFiles {
 
 		private static readonly string path = @"C:\Users\Andi\Downloads";
 		private static readonly string path2 = @"C:\Users";
-		
+
 
 		static void Main(string[] args) {
 			var dict = new ConcurrentDictionary<long, List<string>>();
 			var controller = new Controller();
+			//controller.ParseInputArguments(args);
 			var watch = System.Diagnostics.Stopwatch.StartNew();
 
 			//Get all Files from directory and subdirectories 
-			
-			//TODO: Access restriction
+			controller._filePaths.Add(path2);
 			var files = controller.GetFilesForAllPaths();
-			
 
 			//Sort files by filesize into dictionary
 			foreach (var filePath in files) {
-				long fileSize = new FileInfo(filePath).Length;
+				long fileSize;
+				try {
+					fileSize = new FileInfo(filePath).Length;
+				} catch (Exception ex) {
+					Console.WriteLine(ex.Message);
+					continue;
+				}
 				List<string> list;
 				if (dict.TryGetValue(fileSize, out list)) {
 					list.Add(filePath);
@@ -45,15 +50,8 @@ namespace FindDuplicateFiles {
 
 			watch.Stop();
 			var elapsedMs = watch.ElapsedMilliseconds;
-			Console.WriteLine(elapsedMs + "ms");
+			Console.WriteLine("Execution time = " + elapsedMs + " ms");
 			Console.ReadLine();
 		}
-
-		void ParseInputArguments(string[] argv) {
-			
-		}
-		
-
-		
 	}
 }
