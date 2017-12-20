@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace FindDuplicateFiles {
@@ -15,6 +17,19 @@ namespace FindDuplicateFiles {
 		private List<string> _fileFilter = new List<string>(); //already a regex pattern
 		private int? _depthOfRecursion = null;
 		private int? _maxTasks;
+
+		public List<string> TestFindDuplicateFiles(List<string> files) {
+			return files.Select(
+					f => new {
+						FileName = f,
+						FileHash = Encoding.UTF8.GetString(
+							new SHA1Managed().ComputeHash(new FileStream(f, FileMode.Open, FileAccess.Read)))
+					})
+				.GroupBy(f => f.FileHash)
+				.Select(g => new { FileHash = g.Key, Files = g.Select(z => z.FileName).ToList() })
+				.SelectMany(f => f.Files.Skip(1))
+				.ToList();
+		}
 
 		public List<string> GetFilesForAllPaths() {
 			List<string> allFiles = new List<string>();

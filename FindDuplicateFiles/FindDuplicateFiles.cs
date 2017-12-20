@@ -48,6 +48,9 @@ namespace FindDuplicateFiles {
 				dict.TryRemove(toDelete.Key, out list);
 			}
 
+			var temp = dict.SelectMany(x => x.Value).ToList();
+			var dup = controller.TestFindDuplicateFiles(temp);
+
 			watch.Stop();
 			var elapsedMs = watch.ElapsedMilliseconds;
 			Console.WriteLine("Execution time = " + elapsedMs + " ms");
