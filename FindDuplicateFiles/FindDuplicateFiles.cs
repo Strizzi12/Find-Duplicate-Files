@@ -23,7 +23,7 @@ namespace FindDuplicateFiles {
 
 			//Get all Files from directory and subdirectories 
 			var watch = System.Diagnostics.Stopwatch.StartNew();
-			controller._filePaths.Add(path2);
+			controller._filePaths.Add(path);
 			var files = controller.GetFilesForAllPaths();
 			
 			//Sort files by filesize into dictionary

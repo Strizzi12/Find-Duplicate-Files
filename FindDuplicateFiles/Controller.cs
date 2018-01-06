@@ -33,23 +33,25 @@ namespace FindDuplicateFiles {
 				.SelectMany(f => f.Files.Skip(1))
 				.ToList();
 		}
-		
-		public void ShowDuplicateFiles(ConcurrentBag<List<FileReader>> bag) {
-			Console.WriteLine("Duplicate files:");
-			foreach (var list in bag) {
-				foreach (var item in list) {
-					Console.WriteLine($"File: {item.Path}");
+
+		public void ShowDuplicateFiles(ConcurrentDictionary<long, List<FileReader>> dict) {
+			Console.WriteLine("Duplicate files");
+			foreach (var item in dict) {
+				Console.WriteLine($"File size: {item.Key}");
+				foreach (var entry in item.Value) {
+					Console.WriteLine($"File: {entry.Path}");
 				}
 				Console.WriteLine();
 			}
+			int anzDups = dict.Values.Sum(list => list.Count);
+			Console.WriteLine($"Count of duplicate files: {anzDups}");
 		}
 
-		public ConcurrentBag<List<FileReader>> FindDuplicateFiles(ConcurrentDictionary<long, List<string>> dictionary) {
-			var duplicates = new ConcurrentBag<List<FileReader>>();
+		public ConcurrentDictionary<long, List<FileReader>> FindDuplicateFiles(ConcurrentDictionary<long, List<string>> dictionary) {
+			var duplicates = new ConcurrentDictionary<long, List<FileReader>>();
 			Parallel.ForEach(dictionary, _maxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = _maxTasks.Value } : new ParallelOptions(),
 				dict => {
-					var readers = dict.Value.Select(i => new FileReader(i, dict.Key)).Where(x => x.FileSize > 0).ToList();
-					//duplicates.Add(dict.Value.Select(i => new FileReader(i, dict.Key)).Where(x => x.FileSize == 0).ToList());
+					var readers = dict.Value.Select(i => new FileReader(i, dict.Key)).ToList();		//.Where(x => x.FileSize > 0).ToList();
 					for (int i = 0; i < readers.Count - 1; i++) {
 						var currentGroup = new List<FileReader>();
 						currentGroup.Add(readers[i]);
@@ -63,9 +65,14 @@ namespace FindDuplicateFiles {
 						}
 
 						if (currentGroup.Count > 1) {
-							duplicates.Add(currentGroup);
+							duplicates.TryAdd(readers.FirstOrDefault().FileSize, currentGroup);
 						}
 						readers.RemoveAll(x => currentGroup.Any(y => x == y));
+					}
+
+					//Memory Management
+					foreach (var reader in readers) {
+						reader.Dispose();
 					}
 				});
 			return duplicates;
@@ -229,85 +236,3 @@ namespace FindDuplicateFiles {
 
 	}
 }
-
-//public ConcurrentDictionary<long, List<string>> FindDuplicateFiles(ConcurrentDictionary<long, List<string>> dictionary) {
-//	var duplicates = new ConcurrentDictionary<long, List<string>>();
-//	Parallel.ForEach(dictionary, _maxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = _maxTasks.Value } : new ParallelOptions(),
-//		dict => {
-
-//			int lengthToCalculate = 1;
-//			var groupedDuplicates = new ConcurrentDictionary<Tuple<byte[], byte[]>, List<string>>();
-
-//			while (dict.Key > lengthToCalculate) {
-//				var fileItems = new List<FileItem>();
-//				var fileList = dict.Value;
-
-//				fileItems = CalculateQuickHashes(fileList, lengthToCalculate);
-
-//				//Check for duplicates
-//				for (int i = 0; i < fileItems.Count - 1; i++) {
-//					for (int j = i + 1; j < fileItems.Count; j++) {
-//						var firstHash1 = fileItems[i].Front;
-//						var lastHash1 = fileItems[i].Back;
-
-//						var firstHash2 = fileItems[j].Front;
-//						var lastHash2 = fileItems[j].Back;
-//						if (CompareHashes(firstHash1, firstHash2) && CompareHashes(lastHash1, lastHash2)) {
-//							//Das bedeutet, file von i und file von j sind gleich.
-//						}
-//					}
-//				}
-
-//				lengthToCalculate *= 2;
-//			}
-
-//		});
-//	return duplicates;
-//}
-
-//private List<FileItem> CalculateQuickHashes(List<string> fileList, int lengthToCalculate) {
-//	var fileItems = new List<FileItem>();
-//	//Calculate Quick Hashes
-//	foreach (var file in fileList) {
-//		using (var stream = File.OpenRead(file)) {
-//			var fileItem = new FileItem {
-//				FileName = file,
-//				Size = file.Length
-//			};
-
-//			//first byte
-//			if (file.Length > 0) {
-//				if (file.Length >= lengthToCalculate) {
-//					byte[] bytes = new byte[lengthToCalculate];
-//					stream.Read(bytes, 0, lengthToCalculate);
-//					fileItem.Front = Helper.GetMurMurHash(bytes);
-
-//					byte[] bytes2 = new byte[lengthToCalculate];
-//					stream.Read(bytes2, file.Length - lengthToCalculate, lengthToCalculate);
-//					fileItem.Back = Helper.GetMurMurHash(bytes2);
-
-//				} else {
-//					byte[] bytes = new byte[lengthToCalculate];
-//					stream.Read(bytes, 0, lengthToCalculate);
-//					fileItem.Front = Helper.GetMurMurHash(bytes);
-//					fileItem.Back = null;
-//				}
-//			}
-//			fileItems.Add(fileItem);
-//		}
-//	}
-//	return fileItems;
-//}
-
-//private static bool CompareHashes(byte[] hash1, byte[] hash2) {
-//	if (hash1.Length != hash2.Length) {
-//		return false;
-//	} else {
-//		for (int i = 0; i < hash1.Length; i++) {
-//			if (hash1[i] != hash2[i]) {
-//				return false;
-//			}
-//		}
-//		return true;
-//	}
-//}
