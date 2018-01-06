@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -47,7 +48,8 @@ namespace FindDuplicateFiles {
 			var duplicates = new ConcurrentBag<List<FileReader>>();
 			Parallel.ForEach(dictionary, _maxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = _maxTasks.Value } : new ParallelOptions(),
 				dict => {
-					var readers = dict.Value.Select(i => new FileReader(i, dict.Key)).ToList();
+					var readers = dict.Value.Select(i => new FileReader(i, dict.Key)).Where(x => x.FileSize > 0).ToList();
+					//duplicates.Add(dict.Value.Select(i => new FileReader(i, dict.Key)).Where(x => x.FileSize == 0).ToList());
 					for (int i = 0; i < readers.Count - 1; i++) {
 						var currentGroup = new List<FileReader>();
 						currentGroup.Add(readers[i]);
@@ -59,6 +61,7 @@ namespace FindDuplicateFiles {
 								currentGroup.Add(other);
 							}
 						}
+
 						if (currentGroup.Count > 1) {
 							duplicates.Add(currentGroup);
 						}

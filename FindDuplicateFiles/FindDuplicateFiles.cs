@@ -11,12 +11,13 @@ namespace FindDuplicateFiles {
 
 		private static readonly string path = @"C:\Users\Andi\Downloads";
 		private static readonly string path2 = @"C:\Users";
-		//TODO Optimize Task count
+
+		//TODO Clear and delete streams
 
 		static void Main(string[] args) {
 			var dict = new ConcurrentDictionary<long, List<string>>();
 			var controller = new Controller();
-			controller._maxTasks = 1;
+			
 			//controller.ParseInputArguments(args);
 			//var watch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -58,20 +59,20 @@ namespace FindDuplicateFiles {
 			Console.WriteLine("Execution time = " + elapsedMs2 + " ms");
 
 
-			var watch2 = System.Diagnostics.Stopwatch.StartNew();
+			//var watch2 = System.Diagnostics.Stopwatch.StartNew();
 
-			//groups with same file size
-			var sameSizeGroups = files.Select(f => {
-				var info = new FileInfo(f);
-				return new FileItem { FileName = f,Size = info.Length };
-			}).GroupBy(f => f.Size).Where(g => g.Count() > 1).ToArray();
+			////groups with same file size
+			//var sameSizeGroups = files.Select(f => {
+			//	var info = new FileInfo(f);
+			//	return new FileItem { FileName = f,Size = info.Length };
+			//}).GroupBy(f => f.Size).Where(g => g.Count() > 1).ToArray();
 
-			watch2.Stop();
-			var elapsedMs = watch.ElapsedMilliseconds;
-			Console.WriteLine("Execution time = " + elapsedMs + " ms");
+			//watch2.Stop();
+			//var elapsedMs = watch.ElapsedMilliseconds;
+			//Console.WriteLine("Execution time = " + elapsedMs + " ms");
 
-			var temp = dict.SelectMany(x => x.Value).ToList();
-			var dup = controller.SlowFindDuplicateFiles(temp);
+			//var temp = dict.SelectMany(x => x.Value).ToList();
+			//var dup = controller.SlowFindDuplicateFiles(temp);
 			Console.ReadLine();
 		}
 	}

@@ -42,17 +42,19 @@ namespace FindDuplicateFiles {
 
 			var fileItem = new FileItem();
 			if ((FileSize / 2 + 0.5f) < (startIndex + bytecount)) {
-				bytecount = (int)((FileSize / 2.0) + 0.5f - startIndex);
+				bytecount = (int)(Math.Ceiling((FileSize / 2.0) + 0.5f) - startIndex);
 			}
 
 			byte[] bytes = new byte[bytecount];
-			while (_stream.Read(bytes, startIndex, bytecount) > 0) {
-			}
+			_stream.Position = startIndex;
+			_stream.Read(bytes, 0, bytecount);
 			fileItem.Front = Helper.GetMurMurHash(bytes);
 
 			byte[] bytes2 = new byte[bytecount];
-			while (_stream.Read(bytes2, (int)(FileSize - startIndex - bytecount), bytecount) > 0) {
-			}
+			//_stream.Seek(0, SeekOrigin.Begin);
+			_stream.Position = (FileSize - startIndex - bytecount);
+			_stream.Read(bytes2, 0, bytecount);
+
 			fileItem.Back = Helper.GetMurMurHash(bytes2);
 			_readHashes.Add(index, fileItem);
 			return fileItem;
