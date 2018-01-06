@@ -43,8 +43,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controller.cs" />
+    <Compile Include="FileItem.cs" />
+    <Compile Include="FileReader.cs" />
     <Compile Include="FindDuplicateFiles.cs" />
     <Compile Include="Helper.cs" />
+    <Compile Include="MurMurHash.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

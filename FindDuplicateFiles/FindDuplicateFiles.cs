@@ -11,19 +11,20 @@ namespace FindDuplicateFiles {
 
 		private static readonly string path = @"C:\Users\Andi\Downloads";
 		private static readonly string path2 = @"C:\Users";
-
+		//TODO Optimize Task count
 
 		static void Main(string[] args) {
 			var dict = new ConcurrentDictionary<long, List<string>>();
 			var controller = new Controller();
+			controller._maxTasks = 1;
 			//controller.ParseInputArguments(args);
 			//var watch = System.Diagnostics.Stopwatch.StartNew();
 
 			//Get all Files from directory and subdirectories 
-			controller._filePaths.Add(path);
-			var files = controller.GetFilesForAllPaths();
-
 			var watch = System.Diagnostics.Stopwatch.StartNew();
+			controller._filePaths.Add(path2);
+			var files = controller.GetFilesForAllPaths();
+			
 			//Sort files by filesize into dictionary
 			foreach (var filePath in files) {
 				long fileSize;
@@ -49,33 +50,29 @@ namespace FindDuplicateFiles {
 				dict.TryRemove(toDelete.Key, out list);
 			}
 
+			var dups = controller.FindDuplicateFiles(dict);
 			watch.Stop();
+			controller.ShowDuplicateFiles(dups);
+
 			var elapsedMs2 = watch.ElapsedMilliseconds;
 			Console.WriteLine("Execution time = " + elapsedMs2 + " ms");
+
 
 			var watch2 = System.Diagnostics.Stopwatch.StartNew();
 
 			//groups with same file size
 			var sameSizeGroups = files.Select(f => {
 				var info = new FileInfo(f);
-				return new FileItem { FileName = f, ModifiedTime = info.LastWriteTime, Size = info.Length };
+				return new FileItem { FileName = f,Size = info.Length };
 			}).GroupBy(f => f.Size).Where(g => g.Count() > 1).ToArray();
-
-			
 
 			watch2.Stop();
 			var elapsedMs = watch.ElapsedMilliseconds;
 			Console.WriteLine("Execution time = " + elapsedMs + " ms");
 
 			var temp = dict.SelectMany(x => x.Value).ToList();
-			var dup = controller.TestFindDuplicateFiles(temp);
+			var dup = controller.SlowFindDuplicateFiles(temp);
 			Console.ReadLine();
 		}
-	}
-
-	public class FileItem {
-		public string FileName { get; set; }
-		public DateTime ModifiedTime { get; set; }
-		public long Size { get; set; }
 	}
 }

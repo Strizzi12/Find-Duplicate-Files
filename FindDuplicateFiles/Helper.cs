@@ -21,7 +21,13 @@ namespace FindDuplicateFiles {
 				}
 			}
 		}
-		
+
+		public static byte[] GetMurMurHash(byte[] input) {
+			var murmur = new Murmur3();
+			var hash = murmur.ComputeHash(input);
+			return hash;
+		}
+
 		public static bool IsDigitsOnly(string str) {
 			foreach (char c in str) {
 				if (c < '0' || c > '9')
