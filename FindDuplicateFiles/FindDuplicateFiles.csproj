@@ -44,7 +44,9 @@
   <ItemGroup>
     <Compile Include="Controller.cs" />
     <Compile Include="FindDuplicateFiles.cs" />
+    <Compile Include="Helper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SafeFileEnumerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
