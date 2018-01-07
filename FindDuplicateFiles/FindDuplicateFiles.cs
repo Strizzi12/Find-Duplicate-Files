@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FindDuplicateFiles {
 	class FindDuplicateFiles {
@@ -12,17 +11,14 @@ namespace FindDuplicateFiles {
 		private static readonly string path = @"C:\Users\Andi\Downloads";
 		private static readonly string path2 = @"C:\Users";
 
-		//TODO Clear and delete streams
-
 		static void Main(string[] args) {
 			var dict = new ConcurrentDictionary<long, List<string>>();
 			var controller = new Controller();
 			
-			//controller.ParseInputArguments(args);
-
+			controller.ParseInputArguments(args);
 			
-			var watch = System.Diagnostics.Stopwatch.StartNew();
-			controller._filePaths.Add(path2);
+			var watch = Stopwatch.StartNew();
+			//controller._filePaths.Add(path2);
 
 			//Get all Files from directory and subdirectories 
 			var files = controller.GetFilesForAllPaths();
@@ -54,27 +50,16 @@ namespace FindDuplicateFiles {
 
 			var dups = controller.FindDuplicateFiles(dict);
 			watch.Stop();
+
 			controller.ShowDuplicateFiles(dups);
 
-			var elapsedMs2 = watch.ElapsedMilliseconds;
-			Console.WriteLine("Execution time = " + elapsedMs2 + " ms");
-
-
-			//var watch2 = System.Diagnostics.Stopwatch.StartNew();
-
-			////groups with same file size
-			//var sameSizeGroups = files.Select(f => {
-			//	var info = new FileInfo(f);
-			//	return new FileItem { FileName = f,Size = info.Length };
-			//}).GroupBy(f => f.Size).Where(g => g.Count() > 1).ToArray();
-
-			//watch2.Stop();
-			//var elapsedMs = watch.ElapsedMilliseconds;
-			//Console.WriteLine("Execution time = " + elapsedMs + " ms");
-
-			//var temp = dict.SelectMany(x => x.Value).ToList();
-			//var dup = controller.SlowFindDuplicateFiles(temp);
-			Console.ReadLine();
+			var elapsedMs = watch.ElapsedMilliseconds;
+			if (controller._printProcessTime) {
+				Console.WriteLine("Execution time = " + elapsedMs + " ms");
+			}
+			if (controller._waitForTermination) {
+				Console.ReadLine();
+			}
 		}
 	}
 }

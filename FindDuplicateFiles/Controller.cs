@@ -11,15 +11,15 @@ using System.Threading.Tasks;
 
 namespace FindDuplicateFiles {
 	public class Controller {
-		private bool _waitForTermination;
-		private bool _printProcessTime;
+		public bool _waitForTermination;
+		public bool _printProcessTime;
 		private bool _optimizeTaskCount;
 		private bool _error;
 		public List<string> _filePaths = new List<string>();
-		private bool _moreInfo;
+		public bool _moreInfo;
 		private List<string> _fileFilter = new List<string>(); //already a regex pattern
 		private int? _depthOfRecursion = null;
-		public int? _maxTasks = null;
+		private int? _maxTasks = null;
 
 		public List<string> SlowFindDuplicateFiles(List<string> files) {
 			return files.Select(
@@ -51,7 +51,7 @@ namespace FindDuplicateFiles {
 			var duplicates = new ConcurrentDictionary<long, List<FileReader>>();
 			Parallel.ForEach(dictionary, _maxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = _maxTasks.Value } : new ParallelOptions(),
 				dict => {
-					var readers = dict.Value.Select(i => new FileReader(i, dict.Key)).ToList();		//.Where(x => x.FileSize > 0).ToList();
+					var readers = dict.Value.Select(i => new FileReader(i, dict.Key)).ToList();     //.Where(x => x.FileSize > 0).ToList();
 					for (int i = 0; i < readers.Count - 1; i++) {
 						var currentGroup = new List<FileReader>();
 						currentGroup.Add(readers[i]);
@@ -127,20 +127,34 @@ namespace FindDuplicateFiles {
 
 		private List<string> FilterFiles(List<string> files, List<string> filters) {
 			var list = new List<string>();
-			if (filters.Count > 0) {
-				Parallel.ForEach(files, _maxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = _maxTasks.Value } : new ParallelOptions(),
-					file => {
-						foreach (var filter in filters) {
-							var regex = new Regex(filter);
-							if (regex.IsMatch(file)) {
-								list.Add(file);
-								break;
-							}
-						}
-					});
-				return list;
+			if (filters.Count == 0) {
+				return files;
 			}
-			return files;
+			foreach (var file in files) {
+				if (file != null) {
+					foreach (var filter in filters) {
+						var regex = new Regex(filter);
+						if (regex.IsMatch(file)) {
+							list.Add(file);
+							break;
+						}
+					}
+				}
+			}
+
+			//Parallel.ForEach(files, _maxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = _maxTasks.Value } : new ParallelOptions(),
+			//		file => {
+			//			if (file != null) {
+			//				foreach (var filter in filters) {
+			//					var regex = new Regex(filter);
+			//					if (regex.IsMatch(file)) {
+			//						list.Add(file); //Bug Index out of range exception?!
+			//						break;
+			//					}
+			//				}
+			//			}
+			//		});
+			return list;
 		}
 
 		public void ParseInputArguments(string[] args) {
