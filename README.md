@@ -118,6 +118,10 @@ and during the two calls to count files, temporary files can be created and dele
 
 See also the list of [contributors](https://github.com/Strizzi12/Find-Duplicate-Files/contributors) who participated in this project.
 
+## Special Credits
+
+* **[Marco Gruber](https://github.com/Grubana)** for helping with the comparism
+
 ## License
 
 No license information
