@@ -11,15 +11,14 @@ using System.Threading.Tasks;
 
 namespace FindDuplicateFiles {
 	public class Controller {
-		public bool _waitForTermination;
-		public bool _printProcessTime;
-		private bool _optimizeTaskCount;
-		private bool _error;
-		public List<string> _filePaths = new List<string>();
-		public bool _moreInfo;
-		private List<string> _fileFilter = new List<string>(); //already a regex pattern
-		private int? _depthOfRecursion = null;
-		private int? _maxTasks = null;
+		private bool WaitForTermination { get; set; }
+		public bool PrintProcessTime { get; set; }
+		private bool MoreInfo { get; set; }
+		private int? DepthOfRecursion { get; set; }
+		private int? MaxTasks { get; set; }
+
+		private readonly List<string> FilePaths = new List<string>();
+		private readonly List<string> FileFilter = new List<string>(); //already contains the complete regex pattern
 
 		public List<string> SlowFindDuplicateFiles(List<string> files) {
 			return files.Select(
@@ -49,15 +48,17 @@ namespace FindDuplicateFiles {
 
 		public ConcurrentDictionary<long, List<FileReader>> FindDuplicateFiles(ConcurrentDictionary<long, List<string>> dictionary) {
 			var duplicates = new ConcurrentDictionary<long, List<FileReader>>();
-			Parallel.ForEach(dictionary, _maxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = _maxTasks.Value } : new ParallelOptions(),
+			Parallel.ForEach(dictionary, MaxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = MaxTasks.Value } : new ParallelOptions(),
 				dict => {
 					var readers = dict.Value.Select(i => new FileReader(i, dict.Key)).ToList();     //.Where(x => x.FileSize > 0).ToList();
 					for (int i = 0; i < readers.Count - 1; i++) {
-						var currentGroup = new List<FileReader>();
-						currentGroup.Add(readers[i]);
+						var currentGroup = new List<FileReader> { readers[i] };
 
 						for (int j = i + 1; j < readers.Count; j++) {
 							var current = readers[i];
+							if (MoreInfo) {
+								MyPrint($"Processing file: {current.Path}");
+							}
 							var other = readers[j];
 							if (Compare(current, other)) {
 								currentGroup.Add(other);
@@ -93,9 +94,9 @@ namespace FindDuplicateFiles {
 
 		public List<string> GetFilesForAllPaths() {
 			List<string> allFiles = new List<string>();
-			Parallel.ForEach(_filePaths, _maxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = _maxTasks.Value } : new ParallelOptions(),
+			Parallel.ForEach(FilePaths, MaxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = MaxTasks.Value } : new ParallelOptions(),
 				filePath => {
-					var list = GetFilesFromPath(filePath, _fileFilter, _depthOfRecursion);
+					var list = GetFilesFromPath(filePath, FileFilter, DepthOfRecursion);
 					allFiles.AddRange(list);
 				});
 			return allFiles;
@@ -141,39 +142,37 @@ namespace FindDuplicateFiles {
 					}
 				}
 			}
-
-			//Parallel.ForEach(files, _maxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = _maxTasks.Value } : new ParallelOptions(),
-			//		file => {
-			//			if (file != null) {
-			//				foreach (var filter in filters) {
-			//					var regex = new Regex(filter);
-			//					if (regex.IsMatch(file)) {
-			//						list.Add(file); //Bug Index out of range exception?!
-			//						break;
-			//					}
-			//				}
-			//			}
-			//		});
 			return list;
+		}
+
+		public void Terminate() {
+			if (WaitForTermination) {
+				Console.ReadLine();
+			}
+		}
+
+		public void MyPrint(string input) {
+			if (MoreInfo) {
+				Console.WriteLine(input);
+			}
 		}
 
 		public void ParseInputArguments(string[] args) {
 			for (int i = 0; i < args.Length; i++) {
 				switch (args[i]) {
 					case "-w":
-						_waitForTermination = true;
+						WaitForTermination = true;
 						continue;
 					case "-p":
-						_printProcessTime = true;
+						PrintProcessTime = true;
 						continue;
 					case "-t":
 						if (args[i + 1] != null) {
-							_optimizeTaskCount = true; //When file size is known, a calculation of the optimal thread count could be made.
-							_maxTasks = null;
+							MaxTasks = null;
 							continue;
 						}
 						if (Helper.IsDigitsOnly(args[i + 1])) {
-							_maxTasks = Int32.Parse(args[i + 1]);
+							MaxTasks = Int32.Parse(args[i + 1]);
 							i++; //Counter can be increased because the value of maxThreads is already read.
 							continue;
 						} else {
@@ -184,7 +183,7 @@ namespace FindDuplicateFiles {
 						PrintHelp();
 						continue;
 					case "-v":
-						_moreInfo = true;
+						MoreInfo = true;
 						continue;
 					case "-f":
 						if (args[i + 1] != null) {
@@ -193,7 +192,7 @@ namespace FindDuplicateFiles {
 							var allFilters = completeString.Split(';');
 							foreach (var filter in allFilters) {
 								var temp = filter.Replace("*", @"([a-zA-Z0-9\._\-]*)");
-								_fileFilter.Add(temp);
+								FileFilter.Add(temp);
 							}
 							i++; //Counter can be increased because the value of fileFilter is already read.
 							continue;
@@ -202,19 +201,19 @@ namespace FindDuplicateFiles {
 							break;
 						}
 					case "-s":
-						_filePaths.Add(args[i + 1]);
+						FilePaths.Add(args[i + 1]);
 						i++; //Counter can be increased because the value of filePath is already read.
 						continue;
 					case "-r":
 						if (args[i + 1] != null && !args[i + 1].Contains("-")
 						) //Check if the next input argument is another functionality.
 						{
-							_depthOfRecursion = null; //All files and folders are progressed
+							DepthOfRecursion = null; //All files and folders are progressed
 							continue;
 						} else {
 							var help = args[i + 1];
 							if (Helper.IsDigitsOnly(help)) {
-								_depthOfRecursion = Int32.Parse(help);
+								DepthOfRecursion = Int32.Parse(help);
 								i++; //Counter can be increased because the value of maxThreads is already read.
 								continue;
 							}

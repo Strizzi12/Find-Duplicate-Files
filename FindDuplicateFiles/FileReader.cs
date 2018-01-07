@@ -27,8 +27,7 @@ namespace FindDuplicateFiles {
 			if (_stream == null) {
 				return null;
 			}
-			FileItem result = null;
-			if (_readHashes.TryGetValue(index, out result)) {
+			if (_readHashes.TryGetValue(index, out var result)) {
 				return result;
 			}
 			var fileItem = new FileItem();

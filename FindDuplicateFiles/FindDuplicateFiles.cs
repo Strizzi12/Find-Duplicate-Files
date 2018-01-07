@@ -8,21 +8,21 @@ using System.Linq;
 namespace FindDuplicateFiles {
 	class FindDuplicateFiles {
 
-		private static readonly string path = @"C:\Users\Andi\Downloads";
-		private static readonly string path2 = @"C:\Users";
+		//private static readonly string path = @"C:\Users\Andi\Downloads";
+		//private static readonly string path2 = @"C:\Users";
 
 		static void Main(string[] args) {
 			var dict = new ConcurrentDictionary<long, List<string>>();
 			var controller = new Controller();
-			
+
 			controller.ParseInputArguments(args);
-			
+
 			var watch = Stopwatch.StartNew();
 			//controller._filePaths.Add(path2);
 
 			//Get all Files from directory and subdirectories 
 			var files = controller.GetFilesForAllPaths();
-			
+
 			//Sort files by filesize into dictionary
 			foreach (var filePath in files) {
 				long fileSize;
@@ -32,20 +32,17 @@ namespace FindDuplicateFiles {
 					Console.WriteLine(ex.Message);
 					continue;
 				}
-				List<string> list;
-				if (dict.TryGetValue(fileSize, out list)) {
+				if (dict.TryGetValue(fileSize, out var list)) {
 					list.Add(filePath);
 				} else {
-					List<string> listTemp = new List<string>();
-					listTemp.Add(filePath);
+					List<string> listTemp = new List<string> { filePath };
 					dict.GetOrAdd(fileSize, listTemp);
 				}
 			}
 
 			//Delete entries in dict where count == 1
 			foreach (var toDelete in dict.Where(v => v.Value.Count == 1).ToList()) {
-				List<string> list;
-				dict.TryRemove(toDelete.Key, out list);
+				dict.TryRemove(toDelete.Key, out _);
 			}
 
 			var dups = controller.FindDuplicateFiles(dict);
@@ -54,12 +51,10 @@ namespace FindDuplicateFiles {
 			controller.ShowDuplicateFiles(dups);
 
 			var elapsedMs = watch.ElapsedMilliseconds;
-			if (controller._printProcessTime) {
+			if (controller.PrintProcessTime) {
 				Console.WriteLine("Execution time = " + elapsedMs + " ms");
 			}
-			if (controller._waitForTermination) {
-				Console.ReadLine();
-			}
+			controller.Terminate();
 		}
 	}
 }
