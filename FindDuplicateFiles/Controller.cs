@@ -230,22 +230,23 @@ namespace FindDuplicateFiles {
 
 		private static void PrintHelp() {
 			Console.WriteLine("Die Applikation kann wie folgt aufzurufen:");
-			Console.WriteLine("cntFileBits [-r [n]] [-f fileFilter] [-t maxThreads] [-h] [-p] [-v] [-w] [-s startPath]");
-			Console.WriteLine("-s startPath	Gibt das Startverzeichnis an, ab dem die Dateien gelesen werden sollen;");
-			Console.WriteLine("die Option -s kann auch mehrfach angegeben werden, z.B. wenn zwei Partitionen durchsucht werden sollen");
-			Console.WriteLine("-r [n] Rekursives Lesen der Unterverzeichnisse; wenn n (bei n >= 1) angegeben, dann");
-			Console.WriteLine("bestimmt n die Tiefe der Rekursion; wird n nicht angegeben, dann werden");
-			Console.WriteLine("rekursiv alle unter dem Startverzeichnis stehenden Verzeichnisse und deren Dateien gelesen;");
-			Console.WriteLine("-f fileFilter fileFilter gibt an, welche Dateien gelesen werden sollen; z.B. *.iso oder bild*.jpg;");
-			Console.WriteLine("wird diese Option nicht angegeben, so werden alle Dateien gelesen;");
-			Console.WriteLine("-t maxThreads maximale Anzahl der Threads; wird diese Option nicht angegeben, dann wird die Anzahl der Threads automatisch optimiert.");
-			Console.WriteLine("-h Anzeige der Hilfe & Copyright Info; wird automatisch angezeigt, wenn beim Programmstart keinen Option angegeben wird.");
-			Console.WriteLine("-p Ausgabe der Prozesserungszeit auf stdout in Sekunden.Millisekunden");
-			Console.WriteLine("-v Erweiterte Ausgabe etwaiger Prozessierungsinformationen auf stdout");
-			Console.WriteLine("-w Warten auf eine Taste unmittelbar bevor die applikation terminiert.");
+			Console.WriteLine();
+			Console.WriteLine("searchDubs [-r [n]] [-f fileFilter] [-t maxThreads] [-h] [-p] [-v] [-w] [-s startPath]");
+			Console.WriteLine();
+			Console.WriteLine("-s startPath Gibt das Startverzeichnis an, ab dem die Dateien gelesen werden sollen;");
+			Console.WriteLine("             die Option -s kann auch mehrfach angegeben werden, z.B. wenn zwei Partitionen durchsucht werden sollen");
+			Console.WriteLine("-r [n]       Rekursives Lesen der Unterverzeichnisse; wenn n (bei n >= 1) angegeben, dann");
+			Console.WriteLine("             bestimmt n die Tiefe der Rekursion; wird n nicht angegeben, dann werden");
+			Console.WriteLine("             rekursiv alle unter dem Startverzeichnis stehenden Verzeichnisse und deren Dateien gelesen;");
+			Console.WriteLine("-f           fileFilter fileFilter gibt an, welche Dateien gelesen werden sollen; z.B. *.iso oder bild*.jpg;");
+			Console.WriteLine("             wird diese Option nicht angegeben, so werden alle Dateien gelesen;");
+			Console.WriteLine("-t           maxThreads maximale Anzahl der Threads; wird diese Option nicht angegeben, dann wird die Anzahl der Threads automatisch optimiert.");
+			Console.WriteLine("-h           Anzeige der Hilfe & Copyright Info; wird automatisch angezeigt, wenn beim Programmstart keinen Option angegeben wird.");
+			Console.WriteLine("-p           Ausgabe der Prozesserungszeit auf stdout in Sekunden.Millisekunden");
+			Console.WriteLine("-v           Erweiterte Ausgabe etwaiger Prozessierungsinformationen auf stdout");
+			Console.WriteLine("-w           Warten auf eine Taste unmittelbar bevor die applikation terminiert.");
+			Console.WriteLine();
 			Console.WriteLine("Copyright© by Mike Thomas and Andreas Reschenhofer");
 		}
-
-
 	}
 }

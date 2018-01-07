@@ -95,10 +95,13 @@ It still can happen that two different files create the same hash. If this case 
 ## Testing
 
 The first test was to check how fast all files from a given start path can be found. <br />
-Commandline call: ./searchDub -s "C:\Users" -w -p -v<br />
-Output: ![FindAllFiles](https://github.com/Strizzi12/Find-Duplicate-Files/blob/master/Images/FindAllFiles_C-Users.PNG?raw=true)
+Commandline call: ./searchDub -s "C:\Users" -w -p -v
 
-Calculation from Windows: ![FindAllFiles](https://github.com/Strizzi12/Find-Duplicate-Files/blob/master/Images/Windows_C-Users.PNG?raw=true)
+Output: 
+![FindAllFiles](https://github.com/Strizzi12/Find-Duplicate-Files/blob/master/Images/FindAllFiles_C-Users.PNG?raw=true)
+
+Calculation from Windows: <br />
+![FindAllFiles](https://github.com/Strizzi12/Find-Duplicate-Files/blob/master/Images/Windows_C-Users.PNG?raw=true)
 
 It can be noticed that the file count from our application is not the same as from Windows. We assume that Windows may not count some system files 
 and during the two calls to count files, temporary files can be created and deleted. Although 14k files is still a very big difference for those explanations.
@@ -106,7 +109,7 @@ and during the two calls to count files, temporary files can be created and dele
 
 ### Scan over C:\Users
 
-![Scan over C:\Users at home](https://github.com/Strizzi12/Parallel-Computing/blob/master/Images/Scan_C-Users.png?raw=true)
+![Scan over C:\Users](https://github.com/Strizzi12/Find-Duplicate-Files/blob/master/Images/Scan_C-Users.PNG?raw=true)
 
 ## Authors
 
