@@ -1,4 +1,4 @@
-# Task Parallel in C#
+# Task Parallel in C\#
 
 ## Getting Started
 
