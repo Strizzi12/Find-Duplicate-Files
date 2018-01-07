@@ -1,51 +1,113 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace FindDuplicateFiles {
 	public class Controller {
-		private bool _waitForTermination;
-		private bool _printProcessTime;
-		private bool _optimizeTaskCount;
-		private bool _error;
-		public List<string> _filePaths = new List<string>();
-		private bool _moreInfo;
-		private List<string> _fileFilter = new List<string>(); //already a regex pattern
-		private int? _depthOfRecursion = null;
-		private int? _maxTasks;
+		private bool WaitForTermination { get; set; }
+		public bool PrintProcessTime { get; set; }
+		private bool MoreInfo { get; set; }
+		private int? DepthOfRecursion { get; set; }
+		private int? MaxTasks { get; set; }
 
-		public List<string> TestFindDuplicateFiles(List<string> files) {
+		private readonly List<string> FilePaths = new List<string>();
+		private readonly List<string> FileFilter = new List<string>(); //already contains the complete regex pattern
+
+		public List<string> SlowFindDuplicateFiles(List<string> files) {
 			return files.Select(
 					f => new {
 						FileName = f,
 						FileHash = Encoding.UTF8.GetString(
-							new SHA1Managed().ComputeHash(new FileStream(f, FileMode.Open, FileAccess.Read)))
-					})
+							new SHA1Managed().ComputeHash(new FileStream(f, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+					}).CatchExceptions((ex) => Console.WriteLine(ex.Message))
 				.GroupBy(f => f.FileHash)
 				.Select(g => new { FileHash = g.Key, Files = g.Select(z => z.FileName).ToList() })
 				.SelectMany(f => f.Files.Skip(1))
 				.ToList();
 		}
 
+		public void ShowDuplicateFiles(ConcurrentDictionary<long, List<FileReader>> dict) {
+			Console.WriteLine("Duplicate files");
+			foreach (var item in dict) {
+				Console.WriteLine($"File size: {item.Key}");
+				foreach (var entry in item.Value) {
+					Console.WriteLine($"File: {entry.Path}");
+				}
+				Console.WriteLine();
+			}
+			int anzDups = dict.Values.Sum(list => list.Count);
+			Console.WriteLine($"Count of duplicate files: {anzDups}");
+		}
+
+		public ConcurrentDictionary<long, List<FileReader>> FindDuplicateFiles(ConcurrentDictionary<long, List<string>> dictionary) {
+			var duplicates = new ConcurrentDictionary<long, List<FileReader>>();
+			Parallel.ForEach(dictionary, MaxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = MaxTasks.Value } : new ParallelOptions(),
+				dict => {
+					var readers = dict.Value.Select(i => new FileReader(i, dict.Key)).ToList();     //.Where(x => x.FileSize > 0).ToList();
+					for (int i = 0; i < readers.Count - 1; i++) {
+						var currentGroup = new List<FileReader> { readers[i] };
+
+						for (int j = i + 1; j < readers.Count; j++) {
+							var current = readers[i];
+							if (MoreInfo) {
+								MyPrint($"Processing file: {current.Path}");
+							}
+							var other = readers[j];
+							if (Compare(current, other)) {
+								currentGroup.Add(other);
+							}
+						}
+
+						if (currentGroup.Count > 1) {
+							duplicates.TryAdd(readers.FirstOrDefault().FileSize, currentGroup);
+						}
+						readers.RemoveAll(x => currentGroup.Any(y => x == y));
+					}
+
+					//Memory Management
+					foreach (var reader in readers) {
+						reader.Dispose();
+					}
+				});
+			return duplicates;
+		}
+
+		private bool Compare(FileReader cur, FileReader other) {
+			var equal = true;
+			for (var index = 0; equal; index++) {
+				var itemCur = cur.ReadSection(index);
+				var itemOther = other.ReadSection(index);
+				if (itemCur == null || itemOther == null) {
+					break;
+				}
+				equal = itemCur.Equals(itemOther);
+			}
+			return equal;
+		}
+
 		public List<string> GetFilesForAllPaths() {
 			List<string> allFiles = new List<string>();
-			foreach (var filePath in _filePaths) {
-				var list = GetFiles(filePath, _fileFilter, _depthOfRecursion);
-				allFiles.AddRange(list);
-			}
+			Parallel.ForEach(FilePaths, MaxTasks != null ? new ParallelOptions { MaxDegreeOfParallelism = MaxTasks.Value } : new ParallelOptions(),
+				filePath => {
+					var list = GetFilesFromPath(filePath, FileFilter, DepthOfRecursion);
+					allFiles.AddRange(list);
+				});
 			return allFiles;
 		}
 
-		private List<string> GetFiles(string path, List<string> filter, int? depth = null) {
+		private List<string> GetFilesFromPath(string path, List<string> filter, int? depth = null) {
 			var files = new List<string>();
 			string[] directoriesInPath;
 			string[] filesInPath;
 			try {
-				directoriesInPath = Directory.GetDirectories(path);
+				directoriesInPath = Directory.GetDirectories(path); //Known bug
 				filesInPath = Directory.GetFiles(path);
 			} catch (Exception ex) {
 				Console.WriteLine(ex.Message);
@@ -54,9 +116,9 @@ namespace FindDuplicateFiles {
 			foreach (var directory in directoriesInPath) {
 				var temp = new List<string>();
 				if (depth != null && depth > 0) {
-					temp = GetFiles(directory, filter, depth - 1);
+					temp = GetFilesFromPath(directory, filter, depth - 1);
 				} else {
-					temp = GetFiles(directory, filter);
+					temp = GetFilesFromPath(directory, filter);
 				}
 				files.AddRange(temp);
 			}
@@ -66,8 +128,11 @@ namespace FindDuplicateFiles {
 
 		private List<string> FilterFiles(List<string> files, List<string> filters) {
 			var list = new List<string>();
-			if (filters.Count > 0) {
-				foreach (var file in files) {
+			if (filters.Count == 0) {
+				return files;
+			}
+			foreach (var file in files) {
+				if (file != null) {
 					foreach (var filter in filters) {
 						var regex = new Regex(filter);
 						if (regex.IsMatch(file)) {
@@ -76,27 +141,38 @@ namespace FindDuplicateFiles {
 						}
 					}
 				}
-				return list;
 			}
-			return files;
+			return list;
+		}
+
+		public void Terminate() {
+			if (WaitForTermination) {
+				Console.ReadLine();
+			}
+		}
+
+		public void MyPrint(string input) {
+			if (MoreInfo) {
+				Console.WriteLine(input);
+			}
 		}
 
 		public void ParseInputArguments(string[] args) {
 			for (int i = 0; i < args.Length; i++) {
 				switch (args[i]) {
 					case "-w":
-						_waitForTermination = true;
+						WaitForTermination = true;
 						continue;
 					case "-p":
-						_printProcessTime = true;
+						PrintProcessTime = true;
 						continue;
 					case "-t":
 						if (args[i + 1] != null) {
-							_optimizeTaskCount = true; //When file size is known, a calculation of the optimal thread count could be made.
+							MaxTasks = null;
 							continue;
 						}
-						if (IsDigitsOnly(args[i + 1])) {
-							_maxTasks = Int32.Parse(args[i + 1]);
+						if (Helper.IsDigitsOnly(args[i + 1])) {
+							MaxTasks = Int32.Parse(args[i + 1]);
 							i++; //Counter can be increased because the value of maxThreads is already read.
 							continue;
 						} else {
@@ -107,7 +183,7 @@ namespace FindDuplicateFiles {
 						PrintHelp();
 						continue;
 					case "-v":
-						_moreInfo = true;
+						MoreInfo = true;
 						continue;
 					case "-f":
 						if (args[i + 1] != null) {
@@ -116,7 +192,7 @@ namespace FindDuplicateFiles {
 							var allFilters = completeString.Split(';');
 							foreach (var filter in allFilters) {
 								var temp = filter.Replace("*", @"([a-zA-Z0-9\._\-]*)");
-								_fileFilter.Add(temp);
+								FileFilter.Add(temp);
 							}
 							i++; //Counter can be increased because the value of fileFilter is already read.
 							continue;
@@ -125,19 +201,19 @@ namespace FindDuplicateFiles {
 							break;
 						}
 					case "-s":
-						_filePaths.Add(args[i + 1]);
+						FilePaths.Add(args[i + 1]);
 						i++; //Counter can be increased because the value of filePath is already read.
 						continue;
 					case "-r":
 						if (args[i + 1] != null && !args[i + 1].Contains("-")
 						) //Check if the next input argument is another functionality.
 						{
-							_depthOfRecursion = null; //All files and folders are progressed
+							DepthOfRecursion = null; //All files and folders are progressed
 							continue;
 						} else {
 							var help = args[i + 1];
-							if (IsDigitsOnly(help)) {
-								_depthOfRecursion = Int32.Parse(help);
+							if (Helper.IsDigitsOnly(help)) {
+								DepthOfRecursion = Int32.Parse(help);
 								i++; //Counter can be increased because the value of maxThreads is already read.
 								continue;
 							}
@@ -170,12 +246,6 @@ namespace FindDuplicateFiles {
 			Console.WriteLine("Copyright© by Mike Thomas and Andreas Reschenhofer");
 		}
 
-		private static bool IsDigitsOnly(string str) {
-			foreach (char c in str) {
-				if (c < '0' || c > '9')
-					return false;
-			}
-			return true;
-		}
+
 	}
 }

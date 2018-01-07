@@ -7,7 +7,7 @@
     <ProjectGuid>{403EB48C-EE4D-459B-942E-314BFDE462A1}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>FindDuplicateFiles</RootNamespace>
-    <AssemblyName>FindDuplicateFiles</AssemblyName>
+    <AssemblyName>searchDub</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -43,7 +43,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controller.cs" />
+    <Compile Include="FileItem.cs" />
+    <Compile Include="FileReader.cs" />
     <Compile Include="FindDuplicateFiles.cs" />
+    <Compile Include="Helper.cs" />
+    <Compile Include="MurMurHash.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
