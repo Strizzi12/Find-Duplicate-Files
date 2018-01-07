@@ -19,11 +19,12 @@ namespace FindDuplicateFiles {
 			var controller = new Controller();
 			
 			//controller.ParseInputArguments(args);
-			//var watch = System.Diagnostics.Stopwatch.StartNew();
+
+			
+			var watch = System.Diagnostics.Stopwatch.StartNew();
+			controller._filePaths.Add(path2);
 
 			//Get all Files from directory and subdirectories 
-			var watch = System.Diagnostics.Stopwatch.StartNew();
-			controller._filePaths.Add(path);
 			var files = controller.GetFilesForAllPaths();
 			
 			//Sort files by filesize into dictionary

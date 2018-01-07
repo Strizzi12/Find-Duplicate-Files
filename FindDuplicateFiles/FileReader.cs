@@ -10,6 +10,7 @@ namespace FindDuplicateFiles {
 		public string Path;
 
 		private readonly Dictionary<int, FileItem> _readHashes = new Dictionary<int, FileItem>();
+		protected bool Disposed { get; private set; }
 
 		public FileReader(string path, long fileSize) {
 			Path = path;
@@ -66,8 +67,26 @@ namespace FindDuplicateFiles {
 			return fileItem;
 		}
 
+		~FileReader() {
+			Dispose(false);
+		}
+		
+
 		public void Dispose() {
-			_stream?.Dispose();
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing) {
+			if (!this.Disposed) {
+				if (disposing) {
+					// Perform managed cleanup here.
+					_stream?.Dispose();
+				}
+
+				// Perform unmanaged cleanup here.
+				Disposed = true;
+			}
 		}
 	}
 }
