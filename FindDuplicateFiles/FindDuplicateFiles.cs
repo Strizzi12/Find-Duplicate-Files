@@ -49,7 +49,7 @@ namespace FindDuplicateFiles {
 			watch.Stop();
 
 			controller.ShowDuplicateFiles(dups);
-
+			Console.WriteLine($"Number of checked files: {files.Count}");
 			var elapsedMs = watch.ElapsedMilliseconds;
 			if (controller.PrintProcessTime) {
 				Console.WriteLine("Execution time = " + elapsedMs + " ms");
